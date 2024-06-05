@@ -1,0 +1,7 @@
+*.zip
+*.npy
+/data
+*.csv
+*.crdownload
+
+__pycache__/
