@@ -17,7 +17,7 @@ def train_model(train_data_loader, architecture, file_name, epochs=50, learning_
     :param learning_rate: The learning rate.
     :param model: (Optional) The pre-trained model.
     """
-    # Fijarse si deveria pasar el modelo a la GPU
+    # Fijarse si deberia pasar el modelo a la GPU
     architecture = architecture.to(device)
     criterion = nn.MSELoss()
     optimizer = Adam(architecture.parameters(), lr=learning_rate)

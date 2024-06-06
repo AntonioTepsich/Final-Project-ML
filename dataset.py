@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset
 
 class ImageColorizationDataset(Dataset):
-    def __init__(self, l_dir, ab_dir, reduced=False, transform=None, target_transform=None):
+    def __init__(self, l_dir, ab_dir, reduced=False, limit=3000, transform=None, target_transform=None):
         """
         :param l_dir: Directory where the L channel numpy file is stored.
         :param ab_dir: Directory where the A and B channel numpy files are stored.
@@ -20,7 +20,6 @@ class ImageColorizationDataset(Dataset):
         ])
         
         if reduced:
-            limit = 3000  # ESTE NUMERO LO MODIFICO A GUSTO
             self.l_images = self.l_images[:limit]
             self.ab_images = self.ab_images[:limit]
 
