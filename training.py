@@ -83,3 +83,16 @@ def train_model(train_data_loader, architecture, file_name, epochs=50, learning_
         "time": time.time() - start + initial_time,
         "running_losses": running_losses
     }, f"./{file_name}_{learning_rate}_full.pt")
+
+
+def load_model(model_path, architecture, device="cpu"):
+    """
+    Loads a pre-trained model.
+    :param model_path: The path to the model.
+    :param architecture: The architecture of the model.
+    :return: The pre-trained model.
+    """
+    architecture = architecture.to(device)
+    checkpoint = torch.load(model_path)
+    architecture.load_state_dict(checkpoint["model_state_dict"])
+    return architecture
