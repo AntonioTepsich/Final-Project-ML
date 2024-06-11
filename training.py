@@ -65,7 +65,7 @@ def train_model(train_data_loader, architecture, file_name, epochs=50, learning_
                 "optimizer_state_dict": optimizer.state_dict(),
                 "time": time.time() - start + initial_time,
                 "running_losses": running_losses
-            }, f"./{file_name}_{learning_rate}_{epoch}.pt")
+            }, f"./trained_models/{file_name}_{learning_rate}_{epoch}.pt")
     
     print("Finished Training")
 
