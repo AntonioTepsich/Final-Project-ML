@@ -43,3 +43,42 @@ class ImageColorizationDataset(Dataset):
             ab_image = self.target_transform(ab_image)
 
         return l_image, ab_image
+
+
+
+class CelebADataset(Dataset):
+    def __init__(self, l_images, ab_images, reduced=False, limit=500, transform=None, target_transform=None):
+        """
+        :param l_images: Array of L channel images.
+        :param ab_images: Array of AB channel images.
+        :param reduced: If True, reduces the dataset size to the limit specified.
+        :param transform: (Optional) Transform to be applied on the L channel images.
+        :param target_transform: (Optional) Transform to be applied on the A and B channel images.
+        """
+        self.l_images = l_images
+        self.ab_images = ab_images
+        
+        if reduced:
+            self.l_images = self.l_images[:limit]
+            self.ab_images = self.ab_images[:limit]
+
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __len__(self):
+        return len(self.l_images)
+
+    def __getitem__(self, idx):
+        l_image = self.l_images[idx]
+        ab_image = self.ab_images[idx]
+
+        # Normalization and conversion to tensors
+        l_image = torch.tensor(l_image, dtype=torch.float32).unsqueeze(0) / 100.0  # Normalize L channel
+        ab_image = torch.tensor(ab_image, dtype=torch.float32).permute(2, 0, 1) / 255.0  # Normalize AB channels
+
+        if self.transform:
+            l_image = self.transform(l_image)
+        if self.target_transform:
+            ab_image = self.target_transform(ab_image)
+
+        return l_image, ab_image
