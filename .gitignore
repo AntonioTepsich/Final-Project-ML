@@ -1,6 +1,9 @@
+/data
+/results
+
+
 *.zip
 *.npy
-/data
 *.csv
 *.crdownload
 

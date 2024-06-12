@@ -34,8 +34,8 @@ class ImageColorizationDataset(Dataset):
         ab_image = self.ab_images[idx]
 
         # Normalization and conversion to tensors should be done according to your specific needs
-        l_image = torch.tensor(l_image, dtype=torch.float32).unsqueeze(0) / 255.0
-        ab_image = torch.tensor(ab_image, dtype=torch.float32).permute(2, 0, 1) / 255.0
+        l_image = torch.tensor(l_image, dtype=torch.float32).unsqueeze(0) / 255.0  # de 0 y 255 a [0,1]
+        ab_image = torch.tensor(ab_image, dtype=torch.float32).permute(2, 0, 1) / 127.5 - 1.0 # de 0 y 255 a [-1,1]
 
         if self.transform:
             l_image = self.transform(l_image)
