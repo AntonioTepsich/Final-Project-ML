@@ -3,28 +3,21 @@ from torch import nn
 from torch.optim import Adam
 import time
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 import json
 
 
 
+
 def train_model(train_data_loader, architecture, file_name, epochs=50, learning_rate=0.001, model=None, device="cpu"):
-    """
-    Trains the model with the given examples.
-    :param train_data_loader: DataLoader for the training dataset.
-    :param architecture: The architecture of the model.
-    :param file_name: The file name prefix to be used for storing model and results.
-    :param epochs: The number of epochs.
-    :param learning_rate: The learning rate.
-    :param model: (Optional) The pre-trained model.
-    """
-    # Fijarse si deberia pasar el modelo a la GPU
     architecture = architecture.to(device)
     criterion = nn.MSELoss()
     optimizer = Adam(architecture.parameters(), lr=learning_rate)
-
     running_losses = []
 
-    # Checking if there is a pre-trained model to be loaded.
+    # Initialize TensorBoard
+    writer = SummaryWriter(log_dir=f'runs/{file_name}')
+
     if model is not None:
         checkpoint = torch.load(model)
         architecture.load_state_dict(checkpoint["model_state_dict"])
@@ -38,13 +31,12 @@ def train_model(train_data_loader, architecture, file_name, epochs=50, learning_
 
     start = time.time()
     for epoch in range(epochs):
-        # print(f"Epoch {epoch + 1}")
         epoch_running_loss = 0
         progress_bar = tqdm(enumerate(train_data_loader), total=len(train_data_loader), desc=f"Epoch {epoch+1}", leave=True)
         for i, data in progress_bar:
             gray, color = data
-            gray = gray.float()
-            color = color.float()
+            gray = gray.float().to(device)
+            color = color.float().to(device)
 
             optimizer.zero_grad()
             outputs = architecture(gray)
@@ -55,7 +47,12 @@ def train_model(train_data_loader, architecture, file_name, epochs=50, learning_
             epoch_running_loss += loss.item()
             progress_bar.set_postfix(loss=f'{loss.item():.4f}')
         
-        running_losses.append(epoch_running_loss)
+        epoch_loss = epoch_running_loss / len(train_data_loader)
+        running_losses.append(epoch_loss)
+        print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}")
+
+        # Log the loss to TensorBoard
+        writer.add_scalar('Training Loss', epoch_loss, epoch)
         
         # Save checkpoint every 10 epochs
         if (epoch + 1) % 10 == 0:
@@ -84,15 +81,4 @@ def train_model(train_data_loader, architecture, file_name, epochs=50, learning_
         "running_losses": running_losses
     }, f"./trained_models/{file_name}_{learning_rate}_full.pt")
 
-
-def load_model(model_path, architecture, device="cpu"):
-    """
-    Loads a pre-trained model.
-    :param model_path: The path to the model.
-    :param architecture: The architecture of the model.
-    :return: The pre-trained model.
-    """
-    architecture = architecture.to(device)
-    checkpoint = torch.load(model_path)
-    architecture.load_state_dict(checkpoint["model_state_dict"])
-    return architecture
+    writer.close()
