@@ -1,9 +1,10 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.optim import Adam
 
-class UNet_1(nn.Module):
-    def __init__(self):
+class UNet_32_v1(nn.Module):
+    def __init__(self, params):
         super().__init__()
         
         # Encoder
@@ -26,6 +27,13 @@ class UNet_1(nn.Module):
         # Output layer
         self.outconv = nn.Conv2d(3, 2, kernel_size=3, padding=1, stride=1)
 
+
+
+        self.device = params.device
+        self.criterion = nn.MSELoss()
+        self.optimizer = Adam(self.parameters(), lr=params.learning_rate)
+
+
     def forward(self, x):
         # Encoder
         xe1 = F.relu(self.bn1(self.e1(x)))
@@ -45,4 +53,25 @@ class UNet_1(nn.Module):
         out = self.outconv(torch.cat([xd3, x], dim=1))
 
         return out
+    
+    def train_step(self, data):
+        gray, color = data
+        gray = gray.float().to(self.device)
+        color = color.float().to(self.device)
+        self.optimizer.zero_grad()
+        output = self(gray)
+        loss = self.criterion(output, color)
+        loss.backward()
+
+        self.optimizer.step()
+        return loss.item()
+    
+    def eval_step(self, data):
+        gray, color = data
+        gray = gray.float().to(self.device)
+        color = color.float().to(self.device)
+        output = self(gray)
+        loss = self.criterion(output, color)
+        
+        return loss.item()
         

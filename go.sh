@@ -1,8 +1,5 @@
-#!/bin/bash -ex
+#!/bin/bash -ex       
 
-# python main.py --model "configs/model/Dense.py" \
-#                 --data "configs/data/CIFAR10.py" \
-#                 --feature "configs/feature/Dense.py" \
-
-
-python main.py
+python main.py --model "configs/model/UNet_32_v1.py" \
+    	       --data "configs/data/500.py" \
+	       --features "configs/features/lab.py"

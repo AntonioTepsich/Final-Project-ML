@@ -12,5 +12,3 @@
 ### Modelos
 
 - Convolutional Autoencoder
-
-

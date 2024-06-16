@@ -1,10 +1,29 @@
-/data
-/results
+# Project files
+results
+notebooks
+runs
+data/
+logs
 
-
-*.zip
+# Python
+*__pycache__*
+*.ipynb_checkpoints*
 *.npy
-*.csv
-*.crdownload
+*.pyc
 
-__pycache__/
+# vim / vscode
+*.swp
+*.swo
+*.vscode
+
+# Aux files
+*.log
+
+# keys/tokens
+keys.py
+
+# but...
+!configs/data
+
+
+
