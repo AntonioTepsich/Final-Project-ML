@@ -1,3 +1,3 @@
 feature = "kaggle_dataset"
 version = "v1" # eGeMAPSv01, eGeMAPSv02 ComParE_2016
-norm = "lab" # 'lab' 'none'
+norm = "none" # 'lab' 'none'

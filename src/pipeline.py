@@ -45,7 +45,7 @@ def run_experiment(model_params, data_params, features_params):
     # dataloaders
     train_loader, val_loader, test_loader = get_dataloader(features, model_params.dataloader_params)
     
-    mostrar(train_loader)
+    # mostrar(train_loader)
 
     # # load model
     # model_params.input_dim = features_params.dim

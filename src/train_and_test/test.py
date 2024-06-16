@@ -77,9 +77,9 @@ def test(test_loader, context):
             ab_image = tensor_to_numpy(color[i-1])
             img_lab = np.zeros((224, 224, 3), dtype=np.float32)
             img_lab[:,:,0] = gray_image * 100
-            img_lab[:,:,1:] = (ab_image.transpose(1, 2, 0)) * 127.5
-            img_lab = np.clip(img_lab, 0, 100)  # Clip values
-
+            img_lab[:,:,1:] = np.clip((ab_image.transpose(1, 2, 0) - 0.5) * 128 * 2, -128, 127)  # AB en el rango [-128, 127]
+            # img_lab[:,:,1:] = (ab_image.transpose(1, 2, 0)- 0.5) * 128 * 2
+            img_lab = img_lab.astype('uint8')
             img = lab2rgb(img_lab)
 
             plt.gca().get_xaxis().set_visible(False)
@@ -97,18 +97,19 @@ def test(test_loader, context):
                 ab_image_predicted = tensor_to_numpy(outputs[i-1])
 
                 # Desnormalización correcta de la salida del modelo
-                ab_image_predicted = (ab_image_predicted + 1) * 127.5  # Escalar de [-1, 1] a [0, 255]
+                # ab_image_predicted = (ab_image_predicted + 1) * 127.5  # Escalar de [-1, 1] a [0, 255]
 
                 img_lab_predicted = np.zeros((224, 224, 3), dtype=np.float32)
                 img_lab_predicted[:, :, 0] = np.clip(gray_image * 100, 0, 100)  # L en el rango [0, 100]
-                img_lab_predicted[:, :, 1:] = ab_image_predicted.transpose(1, 2, 0)  # AB en el rango [-128, 127]
+                img_lab_predicted[:, :, 1:] = np.clip((ab_image_predicted.transpose(1, 2, 0) - 0.5) * 128 * 2, -128, 127)  # AB en el rango [-128, 127]
+                # img_lab_predicted[:, :, 1:] = (ab_image_predicted.transpose(1, 2, 0)- 0.5) * 128 * 2  # AB en el rango [-128, 127]
 
                 img = lab2rgb(img_lab_predicted)
 
                 ab_image = tensor_to_numpy(color[i-1])
                 img_lab = np.zeros((224, 224, 3), dtype=np.float32)
                 img_lab[:,:,0] = np.clip(gray_image * 100, 0, 100)  # Clip values
-                img_lab[:,:,1:] = np.clip((ab_image.transpose(1, 2, 0)) * 127, -128, 127)  # Clip values
+                img_lab[:,:,1:] = np.clip((ab_image.transpose(1, 2, 0) - 0.5) * 128 * 2, -128, 127)  # Clip values
 
                 img_true = lab2rgb(img_lab)
 
@@ -140,3 +141,16 @@ def test(test_loader, context):
         json.dump({"total_loss": total_loss}, results_file)
 
     return
+
+def lab_to_rgb(L, ab):
+    """
+    Takes an image or a batch of images and converts from LAB space to RGB
+    """
+    L = L  * 100
+    ab = (ab - 0.5) * 128 * 2
+    Lab = torch.cat([L, ab], dim=2).numpy()
+    rgb_imgs = []
+    for img in Lab:
+        img_rgb = lab2rgb(img)
+        rgb_imgs.append(img_rgb)
+    return np.stack(rgb_imgs, axis=0)

@@ -17,6 +17,9 @@ def extract_features(metadata, params):
 def normalization(metadata, params):
     if params.norm == 'lab':
         metadata = lab_normalization(metadata, params)
+        return metadata
+    elif params.norm == 'none':
+        return metadata
     # elif params.norm == 'speaker':
     #     metadata = speaker_normalization(metadata, params)
     else:

@@ -7,7 +7,7 @@ This repository was made by:
  - Maximo Gubitosi | mgubitosi@udesa.edu.ar 
  <!-- - Antonio Tepsich | atepsich@udesa.edu.ar | [Twitter](https://twitter.com/antotepsich) | [LinkedIn](https://www.linkedin.com/in/antonio-tepsich/) -->
  
-### Advisor
+### Adviser
 <!-- PONER LO DE TRINI -->
  - Antonio Tepsich | atepsich@udesa.edu.ar 
 
@@ -20,8 +20,8 @@ This repository is based on the following papers:
 
 # Installation
 ```bash
-git clone git@github.com/AntonioTepsich/ckan.git
-cd ckan
+git clone git@github.com/AntonioTepsich/Final-Project-ML
+cd Final_Project_ML
 pip install -r requirements.txt
 ```
 
@@ -42,4 +42,10 @@ Your Kaggle Key: XXXXXXXXXXXXXXXXXX
 Especificar las configuraciones de los modelos a entrenar y correr el siguiente comando:
 ```bash
 ./go.sh
+```
+
+### 3- TensorBoard
+
+```bash
+tensorboard --logdir runs
 ```
