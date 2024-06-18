@@ -1,141 +1,13 @@
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 
-from torchvision import transforms
-from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-import numpy as np
 from skimage.color import lab2rgb
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(f"Using device {device}")
+from cwgan.generator import Generator
+from cwgan.discriminator import Critic
 
-
-def lab_to_rgb(L, ab):
-    """
-    Takes an image or a batch of images and converts from LAB space to RGB
-    """
-    L = L  * 100
-    ab = (ab - 0.5) * 128 * 2
-    Lab = torch.cat([L, ab], dim=2).numpy()
-    rgb_imgs = []
-    for img in Lab:
-        img_rgb = lab2rgb(img)
-        rgb_imgs.append(img_rgb)
-    return np.stack(rgb_imgs, axis=0)
-
-class ResBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        self.layer = nn.Sequential(
-            nn.Conv2d(in_channels,out_channels,kernel_size=3, padding=1, stride=stride, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels,kernel_size=3,padding=1, stride=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
-
-        self.identity_map = nn.Conv2d(in_channels, out_channels,kernel_size=1,stride=stride)
-        self.relu = nn.ReLU(inplace=True)
-    def forward(self, inputs):
-        x = inputs.clone().detach()
-        out = self.layer(x)
-        residual  = self.identity_map(inputs)
-        skip = out + residual
-        return self.relu(skip)
-    
-class DownSampleConv(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        self.layer = nn.Sequential(
-            nn.MaxPool2d(2),
-            ResBlock(in_channels, out_channels)
-        )
-
-    def forward(self, inputs):
-        return self.layer(inputs)
-    
-class UpSampleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        
-        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
-        self.res_block = ResBlock(in_channels + out_channels, out_channels)
-        
-    def forward(self, inputs, skip):
-        x = self.upsample(inputs)
-        x = torch.cat([x, skip], dim=1)
-        x = self.res_block(x)
-        return x
-
-class Generator(nn.Module):
-    def __init__(self, input_channel, output_channel, dropout_rate = 0.2):
-        super().__init__()
-        self.encoding_layer1_ = ResBlock(input_channel,64)
-        self.encoding_layer2_ = DownSampleConv(64, 128)
-        self.encoding_layer3_ = DownSampleConv(128, 256)
-        self.bridge = DownSampleConv(256, 512)
-        self.decoding_layer3_ = UpSampleConv(512, 256)
-        self.decoding_layer2_ = UpSampleConv(256, 128)
-        self.decoding_layer1_ = UpSampleConv(128, 64)
-        self.output = nn.Conv2d(64, output_channel, kernel_size=1)
-        self.dropout = nn.Dropout2d(dropout_rate)
-        
-    def forward(self, inputs):
-        ###################### Enocoder #########################
-        e1 = self.encoding_layer1_(inputs)
-        e1 = self.dropout(e1)
-        e2 = self.encoding_layer2_(e1)
-        e2 = self.dropout(e2)
-        e3 = self.encoding_layer3_(e2)
-        e3 = self.dropout(e3)
-        
-        ###################### Bridge #########################
-        bridge = self.bridge(e3)
-        bridge = self.dropout(bridge)
-        
-        ###################### Decoder #########################
-        d3 = self.decoding_layer3_(bridge, e3)
-        d2 = self.decoding_layer2_(d3, e2)
-        d1 = self.decoding_layer1_(d2, e1)
-        
-        ###################### Output #########################
-        output = self.output(d1)
-        return output
-    
-class Critic(nn.Module):
-    def __init__(self, in_channels=3):
-        super(Critic, self).__init__()
-
-        def critic_block(in_filters, out_filters, normalization=True):
-            """Returns layers of each critic block"""
-            layers = [nn.Conv2d(in_filters, out_filters, 4, stride=2, padding=1)]
-            if normalization:
-                layers.append(nn.InstanceNorm2d(out_filters))
-            layers.append(nn.LeakyReLU(0.2, inplace=True))
-            return layers
-
-        self.model = nn.Sequential(
-            *critic_block(in_channels, 64, normalization=False),
-            *critic_block(64, 128),
-            *critic_block(128, 256),
-            *critic_block(256, 512),
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(512, 1)
-        )
-
-    def forward(self, ab, l):
-        # Concatenate image and condition image by channels to produce input
-        img_input = torch.cat((ab, l), 1)
-        output = self.model(img_input)
-        return output
-    
 
 def _weights_init(m):
     if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
@@ -171,7 +43,7 @@ def display_progress(cond, real, fake, current_epoch = 0, figsize=(20,15)):
     plt.show()
 
 
-class CWGAN(nn.Module):
+class CWGAN():
 
     def __init__(self, in_channels, out_channels, learning_rate=0.0002, lambda_recon=100, display_step=10, lambda_gp=10, lambda_r1=10,):
 
@@ -254,5 +126,8 @@ class CWGAN(nn.Module):
             display_progress(condition[0], real[0], fake[0], self.current_epoch)
 
 
+
+# asi se inicializa
+cwgan = CWGAN(in_channels = 1, out_channels = 2 ,learning_rate=2e-4, lambda_recon=100, display_step=10)
 
 

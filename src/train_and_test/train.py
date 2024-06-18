@@ -7,15 +7,38 @@ from os.path import join, split, sep
 from datetime import datetime
 from tqdm import tqdm
 from sklearn.metrics import recall_score, precision_score, accuracy_score
+import os
+
 
 logger = logging.getLogger(__name__)
 
 def train(model, train_loader, val_loader, early_stopper, params, context):
     if params.tboard:
         writer = TensorBoardWriter(context['save_path'])
-    prev_val_loss = float("inf")
-    best_val_loss = float("inf")
+
+    running_train_losses = []
+    running_validation_losses = []
+
+    if params.pre_trained_model is not None or os.path.exists(join(context['save_path'], 'full_model.pt')):
+        if params.pre_trained_model is None:
+            checkpoint = torch.load(join(context['save_path'],'full_model.pt'))
+        else:
+            checkpoint = torch.load(join(context['save_path'],params.pre_trained_model))
+            
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        initial_time = checkpoint["time"]
+        running_train_losses = checkpoint["running_train_losses"]
+        running_validation_losses = checkpoint["running_validation_losses"]
+    else:
+        initial_time = 0
     
+    logger.info(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
+
+    # prev_val_loss = float("inf")
+    # best_val_loss = float("inf")
+    
+    start = time.time()
     for epoch in range(1, params.max_epochs+1):
         model.train()
         total_loss = 0
@@ -26,6 +49,7 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
             pbar.set_description(f"Epoch {epoch}. Train loss: {loss:.4f}")
             total_loss += loss
         train_loss = total_loss / (i+1)
+        running_train_losses.append(total_loss)
         # ...
         
         model.eval()
@@ -38,6 +62,23 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
                 pbar.set_description(f"Epoch {epoch}. Val loss: {loss:.4f}")
                 total_loss += loss
         val_loss = total_loss / (i+1)
+        running_validation_losses.append(total_loss)
+
+        if (epoch % 10) == 0:
+            # save checkpoint
+            checkpoint = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": model.optimizer.state_dict(),
+                "time": time.time() - start + initial_time,
+                "running_train_losses": running_train_losses,
+                "running_validation_losses": running_validation_losses
+            }
+            checkpoint_path = join(context['save_path'], f"checkpoint_{epoch}.pt")
+            torch.save(checkpoint, checkpoint_path)
+            logger.info(f"Checkpoint saved at epoch {epoch:03} with val loss {val_loss:.4f}")
+
+
         # _continue = False if early_stopper.early_stop(val_loss) else True
         _continue = True
         # ...
@@ -45,18 +86,18 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
         # callbacks calls
         # ...
 
-        writer.update_status(epoch, train_loss, val_loss)
-        if (val_loss+0.001) < best_val_loss:
-            best_val_loss = val_loss
-            logger.info(f"Saving the temp best epoch at {epoch:03} with val loss {val_loss:.4f}")
-            best_file_path = join(context['save_path'], 'temp_best_epoch.pth')
-            torch.save(model, best_file_path)
-            
+        writer.update_status(epoch, train_loss, val_loss)    
         if epoch == params.max_epochs:
-            # creo que falta guardar el modelo full entrenado
-            #guardar modelo final .pt
-            full_model_path = join(context['save_path'], 'final_model.pt')
-            torch.save(model, full_model_path)
+            full_model = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": model.optimizer.state_dict(),
+                "time": time.time() - start + initial_time,
+                "running_train_losses": running_train_losses,
+                "running_validation_losses": running_validation_losses
+            }
+            full_model_path = join(context['save_path'], f'full_model.pt')
+            torch.save(full_model, full_model_path)
             logger.info("Max epochs reached! Stopping training..")
             _continue = False
         if not _continue:

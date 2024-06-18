@@ -8,6 +8,7 @@ from importlib.machinery import SourceFileLoader
 from types import ModuleType
 from tqdm import tqdm
 from glob import glob
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,25 @@ def create_result_folder(*params):
     names = [params[i].config_name for i in range(len(params))]
     base = join('results',*names)
     now = datetime.datetime.now()
-    os.makedirs(base, exist_ok=True)
+    # checkear si ya existe la carpeta y si es asi, preguntar si usar el mismo, entrenar uno nuevo o cortar
+    if os.path.exists(base):
+        print('Model already exists')
+        print('Do you want to:')
+        print('1. train a new model')
+        print('2. use the existing model')
+        print('3. Cancel')
+        option = input("1/2/3: ")
+        if option == '1':
+            logger.info('Training new model')
+            # eliminar la carpeta anterior y crear una nueva, es decir cd ..
+            shutil.rmtree(base)
+            os.makedirs(base, exist_ok=False)
+        elif option == '2':
+            logger.info('Using existing model')
+        else:
+            raise ValueError('Experiment canceled')
+    
+    
     # dump confgis files
     for param in params:
         configs = {}

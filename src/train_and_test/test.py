@@ -10,22 +10,23 @@ from skimage.color import lab2rgb
 from torch import cat
 from torch import nn
 import os
+import warnings
+
+
 
 
 logger = logging.getLogger(__name__)
 
 
-def tensor_to_numpy(tensor):
-    return tensor.detach().cpu().numpy()
+def test(test_loader, context, model, pre_trained_model):
+    if pre_trained_model is None:
+        best_model_path = join(context['save_path'], 'full_model.pt')
+        
+    else:
+        best_model_path = join(context['save_path'], pre_trained_model)
 
-def print_stats(arr, name):
-    print(f"{name} - min: {arr.min()}, max: {arr.max()}, mean: {arr.mean()}, std: {arr.std()}")
-
-
-
-def test(test_loader, context):
-    best_model_path = join(context['save_path'], 'temp_best_epoch.pth')
-    model = torch.load(best_model_path)
+    model_data = torch.load(best_model_path)
+    model.load_state_dict(model_data['model_state_dict'])
     model.eval()
 
     columns = 5
@@ -47,45 +48,49 @@ def test(test_loader, context):
         except StopIteration:
             break
 
-        outputs = model(gray)
+        outputs = model(gray).detach()
+
+        cond = gray
+        real = color
+        fake = outputs
+
+        cond = cond.detach().cpu().permute(0,2,3,1)
+        real = real.detach().cpu().permute(0,2,3,1)
+        fake = fake.detach().cpu().permute(0,2,3,1)
+
+        images = [cond, real, fake]
 
         if save_images:
-            fig = plt.figure(figsize=(8, 8))
+            fig = plt.figure(figsize=(16, 10))
 
         for i in range(1, columns + 1):
             if save_images:
                 fig.add_subplot(rows, columns, i)
-            
-            gray_image = tensor_to_numpy(gray[i-1]).squeeze()
-            img = gray_image
+            ab = torch.zeros((224, 224, 2))
+            img = torch.cat([images[0][i-1]*100,ab],dim=2).numpy()
+            imgan = lab2rgb(img)
 
             if i == 3:
-                plt.title("Input")
+                plt.title("INPUT", fontsize=20)
 
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
+
             if save_images:
-                plt.imshow(img, cmap="gray")
+                plt.imshow(imgan)
 
         for i in range(1, columns + 1):
             if save_images:
                 fig.add_subplot(rows, columns, i + columns)
             if i == 3:
-                plt.title("Actual")
+                plt.title("REAL", fontsize=20)
 
-            gray_image = tensor_to_numpy(gray[i-1]).squeeze()
-            ab_image = tensor_to_numpy(color[i-1])
-            img_lab = np.zeros((224, 224, 3), dtype=np.float32)
-            img_lab[:,:,0] = gray_image * 100
-            img_lab[:,:,1:] = np.clip((ab_image.transpose(1, 2, 0) - 0.5) * 128 * 2, -128, 127)  # AB en el rango [-128, 127]
-            # img_lab[:,:,1:] = (ab_image.transpose(1, 2, 0)- 0.5) * 128 * 2
-            img_lab = img_lab.astype('uint8')
-            img = lab2rgb(img_lab)
+            imgan = lab_to_rgb(images[0][i-1], images[1][i-1])
 
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
             if save_images:
-                plt.imshow(img)
+                plt.imshow(imgan)
 
         with torch.no_grad():
             for i in range(1, columns + 1):
@@ -93,26 +98,12 @@ def test(test_loader, context):
                     fig.add_subplot(rows, columns, i + 2 * columns)
                 mse = nn.MSELoss()
 
-                gray_image = tensor_to_numpy(gray[i-1]).squeeze()
-                ab_image_predicted = tensor_to_numpy(outputs[i-1])
+                img = lab_to_rgb(images[0][i-1], images[2][i-1])
 
-                # Desnormalización correcta de la salida del modelo
-                # ab_image_predicted = (ab_image_predicted + 1) * 127.5  # Escalar de [-1, 1] a [0, 255]
+                img_true = lab_to_rgb(images[0][i-1], images[1][i-1])
 
-                img_lab_predicted = np.zeros((224, 224, 3), dtype=np.float32)
-                img_lab_predicted[:, :, 0] = np.clip(gray_image * 100, 0, 100)  # L en el rango [0, 100]
-                img_lab_predicted[:, :, 1:] = np.clip((ab_image_predicted.transpose(1, 2, 0) - 0.5) * 128 * 2, -128, 127)  # AB en el rango [-128, 127]
-                # img_lab_predicted[:, :, 1:] = (ab_image_predicted.transpose(1, 2, 0)- 0.5) * 128 * 2  # AB en el rango [-128, 127]
 
-                img = lab2rgb(img_lab_predicted)
-
-                ab_image = tensor_to_numpy(color[i-1])
-                img_lab = np.zeros((224, 224, 3), dtype=np.float32)
-                img_lab[:,:,0] = np.clip(gray_image * 100, 0, 100)  # Clip values
-                img_lab[:,:,1:] = np.clip((ab_image.transpose(1, 2, 0) - 0.5) * 128 * 2, -128, 127)  # Clip values
-
-                img_true = lab2rgb(img_lab)
-
+                #esto puede estar mal
                 img_tensor = torch.from_numpy(img).permute(2, 0, 1)
                 img_true_tensor = torch.from_numpy(img_true).permute(2, 0, 1)
 
@@ -121,10 +112,10 @@ def test(test_loader, context):
                 total_loss += loss.item()
                 plt.gca().get_yaxis().set_visible(False)
                 plt.gca().set_xticks([])
-                plt.gca().set_xlabel(f"{loss.item():.5f}")
+                plt.gca().set_xlabel(f"{loss.item():.5f}", fontsize=14)
 
                 if i == 3:
-                    plt.title("Predicted")
+                    plt.title("PREDICTED", fontsize=20)
 
                 if save_images:
                     plt.imshow(img)
@@ -132,11 +123,11 @@ def test(test_loader, context):
         if save_images:
             plt.savefig(join(directory, f"test_{j}.png"))
             plt.close()
-
+        
         j += 1
-
-    logger.info(f"Test Loss: {total_loss}")
     
+    logger.info(f"Test Loss: {total_loss:.5f}")
+
     with open(join(context['save_path'],"testing_total_loss.json"), "w") as results_file:
         json.dump({"total_loss": total_loss}, results_file)
 
@@ -146,11 +137,13 @@ def lab_to_rgb(L, ab):
     """
     Takes an image or a batch of images and converts from LAB space to RGB
     """
-    L = L  * 100
-    ab = (ab - 0.5) * 128 * 2
+    L = np.clip(L  * 100,0,100)
+    ab = np.clip((ab - 0.5) * 128 * 2,-128,127)
     Lab = torch.cat([L, ab], dim=2).numpy()
     rgb_imgs = []
     for img in Lab:
-        img_rgb = lab2rgb(img)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            img_rgb = lab2rgb(img)
         rgb_imgs.append(img_rgb)
     return np.stack(rgb_imgs, axis=0)
