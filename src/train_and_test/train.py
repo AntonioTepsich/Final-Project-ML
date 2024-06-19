@@ -19,6 +19,8 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
     running_train_losses = []
     running_validation_losses = []
 
+
+    # Checkea si hay un modelo pre-entrenado y sino arranca de 0
     if params.pre_trained_model is not None or os.path.exists(join(context['save_path'], 'full_model.pt')):
         if params.pre_trained_model is None:
             checkpoint = torch.load(join(context['save_path'],'full_model.pt'))
@@ -35,9 +37,7 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
     
     logger.info(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
 
-    # prev_val_loss = float("inf")
-    # best_val_loss = float("inf")
-    
+    # train loop and validation loop
     start = time.time()
     for epoch in range(1, params.max_epochs+1):
         model.train()

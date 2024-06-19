@@ -8,6 +8,8 @@ from skimage.color import lab2rgb
 from cwgan.generator import Generator
 from cwgan.discriminator import Critic
 
+from src.utils.useful_functions import lab_to_rgb
+
 
 def _weights_init(m):
     if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
@@ -43,22 +45,22 @@ def display_progress(cond, real, fake, current_epoch = 0, figsize=(20,15)):
     plt.show()
 
 
-class CWGAN():
-
-    def __init__(self, in_channels, out_channels, learning_rate=0.0002, lambda_recon=100, display_step=10, lambda_gp=10, lambda_r1=10,):
-
+class CWGAN(nn.Module):
+    # def __init__(self, in_channels, out_channels, learning_rate=0.0002, lambda_recon=100, display_step=10, lambda_gp=10, lambda_r1=10):
+    def __init__(self, params):
         super().__init__()
+
         self.save_hyperparameters()
         
-        self.display_step = display_step
+        self.display_step = params.display_step
         
-        self.generator = Generator(in_channels, out_channels)
-        self.critic = Critic(in_channels + out_channels)
-        self.optimizer_G = optim.Adam(self.generator.parameters(), lr=learning_rate, betas=(0.5, 0.9))
-        self.optimizer_C = optim.Adam(self.critic.parameters(), lr=learning_rate, betas=(0.5, 0.9))
-        self.lambda_recon = lambda_recon
-        self.lambda_gp = lambda_gp
-        self.lambda_r1 = lambda_r1
+        self.generator = Generator(params.in_channels, params.out_channels)
+        self.critic = Critic(params.in_channels + params.out_channels)
+        self.optimizer_G = optim.Adam(self.generator.parameters(), lr=params.learning_rate, betas=(0.5, 0.9))
+        self.optimizer_C = optim.Adam(self.critic.parameters(), lr=params.learning_rate, betas=(0.5, 0.9))
+        self.lambda_recon = params.lambda_recon
+        self.lambda_gp = params.lambda_gp
+        self.lambda_r1 = params.lambda_r1
         self.recon_criterion = nn.L1Loss()
         self.generator_losses, self.critic_losses  =[],[]
     
@@ -88,7 +90,7 @@ class CWGAN():
 
         # Compute the gradient penalty
         alpha = torch.rand(real_images.size(0), 1, 1, 1, requires_grad=True)
-        alpha = alpha.to(device)
+        alpha = alpha.to(self.device)
         interpolated = (alpha * real_images + (1 - alpha) * fake_images.detach()).requires_grad_(True)
         
         interpolated_logits = self.critic(interpolated, conditioned_images)
@@ -128,6 +130,6 @@ class CWGAN():
 
 
 # asi se inicializa
-cwgan = CWGAN(in_channels = 1, out_channels = 2 ,learning_rate=2e-4, lambda_recon=100, display_step=10)
+# cwgan = CWGAN(model_params)
 
 

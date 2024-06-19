@@ -61,6 +61,8 @@ def create_result_folder(*params):
             logger.info('Using existing model')
         else:
             raise ValueError('Experiment canceled')
+    else:
+        os.makedirs(base, exist_ok=False)
     
     
     # dump confgis files

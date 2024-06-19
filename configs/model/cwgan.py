@@ -1,8 +1,8 @@
-name = 'CAE'
+name = 'cwgan_32_v1'
 device='cpu'
 learning_rate = 1e-3
 early_stop_patience = 4
-max_epochs = 2
+max_epochs = 12
 tboard = True
 dataloader_params ={
         'batch_size' : 32,#'persistent_workers' : True,
@@ -14,3 +14,10 @@ dataloader_params ={
         'shuffle_test': False
         }
 pre_trained_model = None # './model_1.pt'
+
+in_channels = 1
+out_channels = 2
+lambda_recon = 100
+display_step = 10
+lambda_gp = 10
+lambda_r1 = 1

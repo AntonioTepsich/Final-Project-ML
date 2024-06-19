@@ -9,7 +9,7 @@ This repository was made by:
  
 ### Adviser
 <!-- PONER LO DE TRINI -->
- - Antonio Tepsich | atepsich@udesa.edu.ar 
+ - Trinidad Monreal | tmonreal@udesa.edu.ar 
 
 
 ### Credits

@@ -10,7 +10,7 @@ from skimage.color import lab2rgb
 from torch import cat
 from torch import nn
 import os
-import warnings
+from src.utils.useful_functions import lab_to_rgb
 
 
 
@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 def test(test_loader, context, model, pre_trained_model):
+    
+    # Checkea si hay un modelo pre-entrenado y sino usa el ultimo
     if pre_trained_model is None:
         best_model_path = join(context['save_path'], 'full_model.pt')
         
@@ -132,18 +134,3 @@ def test(test_loader, context, model, pre_trained_model):
         json.dump({"total_loss": total_loss}, results_file)
 
     return
-
-def lab_to_rgb(L, ab):
-    """
-    Takes an image or a batch of images and converts from LAB space to RGB
-    """
-    L = np.clip(L  * 100,0,100)
-    ab = np.clip((ab - 0.5) * 128 * 2,-128,127)
-    Lab = torch.cat([L, ab], dim=2).numpy()
-    rgb_imgs = []
-    for img in Lab:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            img_rgb = lab2rgb(img)
-        rgb_imgs.append(img_rgb)
-    return np.stack(rgb_imgs, axis=0)
