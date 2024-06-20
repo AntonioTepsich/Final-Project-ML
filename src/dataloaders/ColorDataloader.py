@@ -31,7 +31,7 @@ class ColorDataloader():
 
     def create_dataloaders(self):
         train_dataset, valid_dataset, test_dataset = self.split_dataset()
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=self.shuffle_train)
-        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=self.shuffle_valid)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=self.shuffle_test)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=self.shuffle_train, pin_memory = True)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=self.shuffle_valid, pin_memory = True)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=self.shuffle_test, pin_memory = True)
         return train_loader, valid_loader, test_loader
