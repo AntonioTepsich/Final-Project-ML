@@ -1,5 +1,5 @@
 name = 'CWGAN'
-device='cpu'
+device='cuda'
 learning_rate = 1e-3
 early_stop_patience = 4
 max_epochs = 12
