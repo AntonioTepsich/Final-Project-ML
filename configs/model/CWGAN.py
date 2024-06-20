@@ -2,10 +2,10 @@ name = 'CWGAN'
 device='cuda'
 learning_rate = 1e-3
 early_stop_patience = 4
-max_epochs = 12
+max_epochs = 100
 tboard = True
 dataloader_params ={
-        'batch_size' : 32,#'persistent_workers' : True,
+        'batch_size' : 16,#'persistent_workers' : True,
         'num_workers': 0,
         'train_ratio': 0.75,
         'valid_ratio': 0.15,

@@ -80,3 +80,7 @@ class CAE(nn.Module):
         loss = self.criterion(output, color)
         
         return loss.item()
+    
+
+    def predict(self, condition):
+        return self(condition)
