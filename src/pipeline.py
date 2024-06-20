@@ -59,7 +59,7 @@ def run_experiment(model_params, data_params, features_params):
     
     
     # test
-    test(test_loader, context, model, model_params.pre_trained_model)
+    # test(test_loader, context, model, model_params.pre_trained_model)
     logger.info('Experiment completed')
     return 
 

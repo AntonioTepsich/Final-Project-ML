@@ -1,4 +1,4 @@
-name = 'cwgan_32_v1'
+name = 'CWGAN'
 device='cpu'
 learning_rate = 1e-3
 early_stop_patience = 4

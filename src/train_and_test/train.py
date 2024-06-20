@@ -61,6 +61,7 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
                 loss = model.eval_step(data)
                 pbar.set_description(f"Epoch {epoch}. Val loss: {loss:.4f}")
                 total_loss += loss
+                
         val_loss = total_loss / (i+1)
         running_validation_losses.append(total_loss)
 
