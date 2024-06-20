@@ -28,7 +28,7 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
             checkpoint = torch.load(join(context['save_path'],params.pre_trained_model))
             
         model.load_state_dict(checkpoint["model_state_dict"])
-        model.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        # model.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         initial_time = checkpoint["time"]
         running_train_losses = checkpoint["running_train_losses"]
         running_validation_losses = checkpoint["running_validation_losses"]
@@ -67,10 +67,20 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
 
         if (epoch % 10) == 0:
             # save checkpoint
+            # if params.types == 'GAN':
+            #     checkpoint = {
+            #         "epoch": epoch,
+            #         "model_state_dict": model.generator.state_dict(),
+            #         "optimizer_state_dict": model.optimizer_G.state_dict(),
+            #         "time": time.time() - start + initial_time,
+            #         "running_train_losses": running_train_losses,
+            #         "running_validation_losses": running_validation_losses
+            #     }
+            # else:
             checkpoint = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": model.optimizer.state_dict(),
+                # "optimizer_state_dict": model.optimizer.state_dict(),
                 "time": time.time() - start + initial_time,
                 "running_train_losses": running_train_losses,
                 "running_validation_losses": running_validation_losses
@@ -89,10 +99,20 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
 
         writer.update_status(epoch, train_loss, val_loss)    
         if epoch == params.max_epochs:
+            # if params.types == 'GAN':
+            #     full_model = {
+            #         "epoch": epoch,
+            #         "model_state_dict": model.generator.state_dict(),
+            #         "optimizer_state_dict": model.optimizer_G.state_dict(),
+            #         "time": time.time() - start + initial_time,
+            #         "running_train_losses": running_train_losses,
+            #         "running_validation_losses": running_validation_losses
+            #     }
+            # else:
             full_model = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": model.optimizer.state_dict(),
+                # "optimizer_state_dict": model.optimizer.state_dict(),
                 "time": time.time() - start + initial_time,
                 "running_train_losses": running_train_losses,
                 "running_validation_losses": running_validation_losses

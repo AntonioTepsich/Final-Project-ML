@@ -60,8 +60,8 @@ class CWGAN(nn.Module):
         self.out_channels = params.out_channels
         self.learning_rate = params.learning_rate
         
-        self.generator = Generator(self.in_channels, self.out_channels)
-        self.critic = Critic(self.in_channels + self.out_channels)
+        self.generator = Generator(self.in_channels, self.out_channels).to(self.device)
+        self.critic = Critic(self.in_channels + self.out_channels).to(self.device)
         self.optimizer_G = optim.Adam(self.generator.parameters(), lr=self.learning_rate, betas=(0.5, 0.9))
         self.optimizer_C = optim.Adam(self.critic.parameters(), lr=self.learning_rate, betas=(0.5, 0.9))
         self.recon_criterion = nn.L1Loss()
@@ -92,7 +92,7 @@ class CWGAN(nn.Module):
         self.optimizer_C.zero_grad()
         fake_images = self.generator(conditioned_images)
         fake_logits = self.critic(fake_images, conditioned_images)
-        real_logits = self.critic(real_images, conditioned_images)
+        real_logits = self.critic(real_images, conditioned_images).to(self.device)
         
         # Compute the loss for the critic
         loss_C = real_logits.mean() - fake_logits.mean()
@@ -123,6 +123,8 @@ class CWGAN(nn.Module):
         
     def train_step(self, batch):
         condition, real = batch
+        condition = condition.to(self.device)
+        real = real.to(self.device)
         
         if self.step_count%2 == 0:
             self.critic_step(real, condition)
@@ -134,27 +136,30 @@ class CWGAN(nn.Module):
         crit_mean = sum(self.critic_losses[-self.display_step:]) / self.display_step
         
         # mover esto al training loop
-        if self.current_epoch%self.display_step==0 and self.step_count%2==1:
-            fake = self.generator(condition).detach()
+        # if self.current_epoch%self.display_step==0 and self.step_count%2==1:
+            # fake = self.generator(condition).detach()
             # torch.save(self.generator.state_dict(), "ResUnet_"+ str(self.current_epoch) +".pt")
             # torch.save(self.critic.state_dict(), "PatchGAN_"+ str(self.current_epoch) +".pt")
-            print(f"Epoch {self.current_epoch} : Generator loss: {gen_mean}, Critic loss: {crit_mean}")
-            display_progress(condition[0], real[0], fake[0], self.current_epoch)
+            # print(f"Epoch {self.current_epoch} : Generator loss: {gen_mean}, Critic loss: {crit_mean}")
+            # display_progress(condition[0], real[0], fake[0], self.current_epoch)
         
         self.current_epoch += 1
         return gen_mean
     
     def eval_step(self, batch):
-        real, condition = batch
-        fake = self.generator(condition).detach().squeeze().permute(1, 2, 0)
-        condition = condition.detach().squeeze(0).permute(1, 2, 0)
-        real = real.detach().squeeze(0).permute(1, 2, 0)
+        condition, real = batch
+        real = real.to(self.device)
+        condition = condition.to(self.device)
+        fake = self.generator(condition).detach().squeeze().permute(0, 2, 3, 1)
+        fake = fake.to(self.device)
+        condition = condition.detach().squeeze(0).permute(0, 2, 3, 1)
+        real = real.detach().squeeze(0).permute(0, 2, 3, 1)
         recon_loss = self.recon_criterion(fake, real)
         return recon_loss.item()
 
+    def predict(self, condition):
+        condition = condition.to(self.device)
+        return self.generator(condition)
 
-
-# asi se inicializa
-# cwgan = CWGAN(model_params)
 
 

@@ -23,7 +23,6 @@ def test(test_loader, context, model, pre_trained_model):
     # Checkea si hay un modelo pre-entrenado y sino usa el ultimo
     if pre_trained_model is None:
         best_model_path = join(context['save_path'], 'full_model.pt')
-        
     else:
         best_model_path = join(context['save_path'], pre_trained_model)
 
@@ -49,8 +48,9 @@ def test(test_loader, context, model, pre_trained_model):
             gray, color = next(data_iterator)
         except StopIteration:
             break
-
-        outputs = model(gray).detach()
+        
+        
+        outputs = model.predict(gray).detach()
 
         cond = gray
         real = color
