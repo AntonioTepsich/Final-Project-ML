@@ -1,8 +1,8 @@
 name = 'UNet_32_v1'
-device='cpu'
+device='cuda'
 learning_rate = 1e-3
 early_stop_patience = 4
-max_epochs = 15
+max_epochs = 30
 tboard = True
 dataloader_params ={
         'batch_size' : 32,#'persistent_workers' : True,
