@@ -8,3 +8,8 @@
 python main.py --model "configs/model/CWGAN.py" \
     	       --data "configs/data/5000.py" \
 	       --features "configs/features/none.py"
+
+
+# python main.py --model "configs/model/CWGAN.py" \
+#     	       --data "configs/data/CelebA.py" \
+# 	       --features "configs/features/none.py"
