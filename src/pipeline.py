@@ -55,11 +55,11 @@ def run_experiment(model_params, data_params, features_params):
     # train
     # early_stopper = EarlyStopper(patience=model_params.early_stop_patience)
     early_stopper = False
-    # train(model, train_loader, val_loader, early_stopper, model_params, context)
+    train(model, train_loader, val_loader, early_stopper, model_params, context)
     
     
     # test
-    test(test_loader, context, model, model_params.pre_trained_model)
+    # test(test_loader, context, model, model_params.pre_trained_model)
     logger.info('Experiment completed')
     return 
 
