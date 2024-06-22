@@ -2,47 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-import matplotlib.pyplot as plt
-from skimage.color import lab2rgb
-
 from src.models.cwgan.generator import Generator
 from src.models.cwgan.discriminator import Critic
-
-from src.utils.useful_functions import lab_to_rgb
-
-
-def _weights_init(m):
-    if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-    if isinstance(m, nn.BatchNorm2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-        torch.nn.init.constant_(m.bias, 0)
-
-def display_progress(cond, real, fake, current_epoch = 0, figsize=(20,15)):
-    """
-    Save cond, real (original) and generated (fake)
-    images in one panel 
-    """
-    cond = cond.detach().cpu().permute(1, 2, 0)   
-    real = real.detach().cpu().permute(1, 2, 0)
-    fake = fake.detach().cpu().permute(1, 2, 0)
-    
-    images = [cond, real, fake]
-    titles = ['input','real','generated']
-    print(f'Epoch: {current_epoch}')
-    fig, ax = plt.subplots(1, 3, figsize=figsize)
-    for idx,img in enumerate(images):
-        if idx == 0:
-            ab = torch.zeros((224,224,2))
-            img = torch.cat([images[0]* 100, ab], dim=2).numpy()
-            imgan = lab2rgb(img)
-        else:
-            imgan = lab_to_rgb(images[0],img)
-        ax[idx].imshow(imgan)
-        ax[idx].axis("off")
-    for idx, title in enumerate(titles):    
-        ax[idx].set_title('{}'.format(title))
-    plt.show()
 
 
 class CWGAN(nn.Module):
@@ -89,32 +50,29 @@ class CWGAN(nn.Module):
         
         
     def critic_step(self, real_images, conditioned_images):
-        self.optimizer_C.zero_grad()
-        fake_images = self.generator(conditioned_images)
-        fake_logits = self.critic(fake_images, conditioned_images)
-        real_logits = self.critic(real_images, conditioned_images).to(self.device)
-        
-        # Compute the loss for the critic
+        self.optimizer_C.zero_grad()  # Reinicia los gradientes del optimizador del crítico.
+        fake_images = self.generator(conditioned_images).detach()  # Detiene la propagación de gradientes.
+        fake_logits = self.critic(fake_images, conditioned_images)  # Evalúa las imágenes falsas.
+        real_logits = self.critic(real_images, conditioned_images)  # Evalúa las imágenes reales.
+
+        # Calcula la pérdida básica del crítico.
         loss_C = real_logits.mean() - fake_logits.mean()
 
-        # Compute the gradient penalty
-        alpha = torch.rand(real_images.size(0), 1, 1, 1, requires_grad=True)
-        alpha = alpha.to(self.device)
-        interpolated = (alpha * real_images + (1 - alpha) * fake_images.detach()).requires_grad_(True)
-        
+        # Penalización por gradiente (Gradient penalty)
+        alpha = torch.rand(real_images.size(0), 1, 1, 1, device=self.device, requires_grad=True)
+        interpolated = (alpha * real_images + (1 - alpha) * fake_images).requires_grad_(True)
         interpolated_logits = self.critic(interpolated, conditioned_images)
-        
-        grad_outputs = torch.ones_like(interpolated_logits, dtype=torch.float32, requires_grad=True)
-        gradients = torch.autograd.grad(outputs=interpolated_logits, inputs=interpolated, grad_outputs=grad_outputs,create_graph=True, retain_graph=True)[0]
+        grad_outputs = torch.ones(interpolated_logits.size(), device=self.device, requires_grad=False)
+        gradients = torch.autograd.grad(outputs=interpolated_logits,
+                                        inputs=interpolated,
+                                        grad_outputs=grad_outputs,
+                                        create_graph=True,
+                                        retain_graph=True,
+                                        only_inputs=True)[0]
+        gradients = gradients.view(gradients.size(0), -1)
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        loss_C += self.lambda_gp * gradient_penalty  # Agrega la penalización por gradiente a la pérdida del crítico.
 
-        
-        gradients = gradients.view(len(gradients), -1)
-        gradients_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-        loss_C += self.lambda_gp * gradients_penalty
-        
-        # Compute the R1 regularization loss
-        r1_reg = gradients.pow(2).sum(1).mean()
-        loss_C += self.lambda_r1 * r1_reg
 
         # Backpropagation
         loss_C.backward()
@@ -140,9 +98,9 @@ class CWGAN(nn.Module):
             # fake = self.generator(condition).detach()
             # torch.save(self.generator.state_dict(), "ResUnet_"+ str(self.current_epoch) +".pt")
             # torch.save(self.critic.state_dict(), "PatchGAN_"+ str(self.current_epoch) +".pt")
-            # print(f"Epoch {self.current_epoch} : Generator loss: {gen_mean}, Critic loss: {crit_mean}")
             # display_progress(condition[0], real[0], fake[0], self.current_epoch)
         
+        print(f"Epoch {self.current_epoch} : Generator loss: {gen_mean}, Critic loss: {crit_mean}")
         self.current_epoch += 1
         return gen_mean
     
@@ -150,10 +108,10 @@ class CWGAN(nn.Module):
         condition, real = batch
         real = real.to(self.device)
         condition = condition.to(self.device)
-        fake = self.generator(condition).detach().squeeze().permute(0, 2, 3, 1)
+        fake = self.generator(condition).detach().squeeze().permute(1, 2, 0)
         fake = fake.to(self.device)
-        condition = condition.detach().squeeze(0).permute(0, 2, 3, 1)
-        real = real.detach().squeeze(0).permute(0, 2, 3, 1)
+        condition = condition.detach().squeeze(0).permute(1, 2, 0)
+        real = real.detach().squeeze(0).permute(1, 2, 0)
         recon_loss = self.recon_criterion(fake, real)
         return recon_loss.item()
 

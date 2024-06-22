@@ -30,107 +30,75 @@ def test(test_loader, context, model, pre_trained_model):
     model.load_state_dict(model_data['model_state_dict'])
     model.eval()
 
-    columns = 5
-    rows = 3
-
-    data_iterator = iter(test_loader)
-
     total_loss = 0
     save_images = True
+    max_images_to_save = 2
+    images_saved = 0
+
     if save_images:
         directory = join(context['save_path'], 'images')
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    j = 0
-    while True:
-        try:
-            gray, color = next(data_iterator)
-        except StopIteration:
-            break
-        
-        
+    buffer_images = [[], [], []]  # To store images for saving in groups of 5
+
+    for j, (gray, color) in enumerate(test_loader):
         outputs = model.predict(gray).detach()
-
-        cond = gray
-        real = color
-        fake = outputs
-
-        cond = cond.detach().cpu().permute(0,2,3,1)
-        real = real.detach().cpu().permute(0,2,3,1)
-        fake = fake.detach().cpu().permute(0,2,3,1)
-
+        cond = gray.detach().cpu().permute(0, 2, 3, 1)
+        real = color.detach().cpu().permute(0, 2, 3, 1)
+        fake = outputs.detach().cpu().permute(0, 2, 3, 1)
         images = [cond, real, fake]
 
-        if save_images:
-            fig = plt.figure(figsize=(16, 10))
+        batch_size = cond.shape[0]
+        for i in range(batch_size):
+            buffer_images[0].append(images[0][i])
+            buffer_images[1].append(images[1][i])
+            buffer_images[2].append(images[2][i])
 
-        for i in range(1, columns + 1):
-            if save_images:
-                fig.add_subplot(rows, columns, i)
-            ab = torch.zeros((224, 224, 2))
-            img = torch.cat([images[0][i-1]*100,ab],dim=2).numpy()
-            imgan = lab2rgb(img)
+            if len(buffer_images[0]) == 5 and images_saved < max_images_to_save:
+                fig, axes = plt.subplots(3, 5, figsize=(16, 10))
 
-            if i == 3:
-                plt.title("INPUT", fontsize=20)
+                for k in range(5):
+                    ab = torch.zeros((224, 224, 2))
+                    input_img = torch.cat([buffer_images[0][k] * 100, ab], dim=2).numpy()
+                    input_img = lab2rgb(input_img)
+                    real_img = lab_to_rgb(buffer_images[0][k], buffer_images[1][k])
+                    fake_img = lab_to_rgb(buffer_images[0][k], buffer_images[2][k])
 
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
+                    axes[0, k].imshow(input_img)
+                    axes[0, k].axis('off')
+                    if k == 2:
+                        axes[0, k].set_title("INPUT", fontsize=20)
 
-            if save_images:
-                plt.imshow(imgan)
+                    axes[1, k].imshow(real_img)
+                    axes[1, k].axis('off')
+                    if k == 2:
+                        axes[1, k].set_title("REAL", fontsize=20)
 
-        for i in range(1, columns + 1):
-            if save_images:
-                fig.add_subplot(rows, columns, i + columns)
-            if i == 3:
-                plt.title("REAL", fontsize=20)
+                    axes[2, k].imshow(fake_img)
+                    axes[2, k].axis('off')
+                    if k == 2:
+                        axes[2, k].set_title("PREDICTED", fontsize=20)
 
-            imgan = lab_to_rgb(images[0][i-1], images[1][i-1])
+                plt.savefig(join(directory, f"test_{images_saved}.png"))
+                plt.close(fig)
+                images_saved += 1
 
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
-            if save_images:
-                plt.imshow(imgan)
+                buffer_images = [[], [], []]  # Clear buffer
 
         with torch.no_grad():
-            for i in range(1, columns + 1):
-                if save_images:
-                    fig.add_subplot(rows, columns, i + 2 * columns)
-                mse = nn.MSELoss()
-
-                img = lab_to_rgb(images[0][i-1], images[2][i-1])
-
-                img_true = lab_to_rgb(images[0][i-1], images[1][i-1])
-
-
-                #esto puede estar mal
-                img_tensor = torch.from_numpy(img).permute(2, 0, 1)
-                img_true_tensor = torch.from_numpy(img_true).permute(2, 0, 1)
-
-                loss = mse(img_tensor, img_true_tensor)
-
+            mse = torch.nn.MSELoss()
+            for i in range(batch_size):
+                fake_img = lab_to_rgb(images[0][i], images[2][i])
+                real_img = lab_to_rgb(images[0][i], images[1][i])
+                fake_img_tensor = torch.from_numpy(fake_img).permute(2, 0, 1)
+                real_img_tensor = torch.from_numpy(real_img).permute(2, 0, 1)
+                loss = mse(fake_img_tensor, real_img_tensor)
                 total_loss += loss.item()
-                plt.gca().get_yaxis().set_visible(False)
-                plt.gca().set_xticks([])
-                plt.gca().set_xlabel(f"{loss.item():.5f}", fontsize=14)
 
-                if i == 3:
-                    plt.title("PREDICTED", fontsize=20)
-
-                if save_images:
-                    plt.imshow(img)
-
-        if save_images:
-            plt.savefig(join(directory, f"test_{j}.png"))
-            plt.close()
-        
-        j += 1
-    
     logger.info(f"Test Loss: {total_loss:.5f}")
 
-    with open(join(context['save_path'],"testing_total_loss.json"), "w") as results_file:
+    with open(join(context['save_path'], "testing_total_loss.json"), "w") as results_file:
         json.dump({"total_loss": total_loss}, results_file)
 
     return

@@ -8,9 +8,38 @@ from datetime import datetime
 from tqdm import tqdm
 from sklearn.metrics import recall_score, precision_score, accuracy_score
 import os
+import matplotlib.pyplot as plt
+from skimage.color import lab2rgb
+from src.utils.useful_functions import lab_to_rgb
 
 
 logger = logging.getLogger(__name__)
+
+def display_progress(cond, real, fake, current_epoch = 0, figsize=(20,15)):
+    """
+    Save cond, real (original) and generated (fake)
+    images in one panel 
+    """
+    cond = cond.detach().cpu().permute(1, 2, 0)   
+    real = real.detach().cpu().permute(1, 2, 0)
+    fake = fake.detach().cpu().permute(1, 2, 0)
+    
+    images = [cond, real, fake]
+    titles = ['input','real','generated']
+    print(f'Epoch: {current_epoch}')
+    fig, ax = plt.subplots(1, 3, figsize=figsize)
+    for idx,img in enumerate(images):
+        if idx == 0:
+            ab = torch.zeros((224,224,2))
+            img = torch.cat([images[0]* 100, ab], dim=2).numpy()
+            imgan = lab2rgb(img)
+        else:
+            imgan = lab_to_rgb(images[0],img)
+        ax[idx].imshow(imgan)
+        ax[idx].axis("off")
+    for idx, title in enumerate(titles):    
+        ax[idx].set_title('{}'.format(title))
+    plt.show()
 
 def train(model, train_loader, val_loader, early_stopper, params, context):
     if params.tboard:
@@ -66,17 +95,6 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
         running_validation_losses.append(total_loss)
 
         if (epoch % 10) == 0:
-            # save checkpoint
-            # if params.types == 'GAN':
-            #     checkpoint = {
-            #         "epoch": epoch,
-            #         "model_state_dict": model.generator.state_dict(),
-            #         "optimizer_state_dict": model.optimizer_G.state_dict(),
-            #         "time": time.time() - start + initial_time,
-            #         "running_train_losses": running_train_losses,
-            #         "running_validation_losses": running_validation_losses
-            #     }
-            # else:
             checkpoint = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
@@ -89,6 +107,7 @@ def train(model, train_loader, val_loader, early_stopper, params, context):
             torch.save(checkpoint, checkpoint_path)
             logger.info(f"Checkpoint saved at epoch {epoch:03} with val loss {val_loss:.4f}")
 
+            display_progress(data[0][0], data[1][0], model.predict(data[0])[0], current_epoch=epoch)
 
         # _continue = False if early_stopper.early_stop(val_loss) else True
         _continue = True
