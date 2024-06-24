@@ -3,6 +3,7 @@ archive/
 flowers/
 /data
 /trained_models
+/CelebA
 
 *.zip
 *.npy
