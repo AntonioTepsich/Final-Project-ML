@@ -1,3 +1,3 @@
 name = 'full-imgs'
-path = 'data/celebA/img_celeba'
-limit = None
+path = 'CelebA/celebA/img_align_celeba/img_align_celeba'
+limit = 500

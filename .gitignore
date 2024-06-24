@@ -4,6 +4,7 @@ notebooks
 runs
 data/
 logs
+/CelebA
 
 # Python
 *__pycache__*
