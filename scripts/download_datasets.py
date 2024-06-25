@@ -1,8 +1,6 @@
 import opendatasets as od
 import os
 
-od.download("https://www.kaggle.com/datasets/shravankumar9892/image-colorization","./")
-
 def rename_folder(old_name, new_name):
     try:
         os.rename(old_name, new_name)
@@ -11,14 +9,17 @@ def rename_folder(old_name, new_name):
         print(f"Error: {e}")
 
 
+## Image colorization dataset
+od.download("https://www.kaggle.com/datasets/shravankumar9892/image-colorization","./")
+
 old_folder_name = "image-colorization"
 new_folder_name = "data"
 rename_folder(old_folder_name, new_folder_name)
 
 
-## For Celeba dataset
-
+## Celeba dataset
 # od.download("https://www.kaggle.com/datasets/jessicali9530/celeba-dataset/data","./")
 
-# old_folder_name = "archive"
-# new_folder_name = "Celeba"
+# old_folder_name = "celeba-dataset"
+# new_folder_name = "CelebA"
+# rename_folder(old_folder_name, new_folder_name)
