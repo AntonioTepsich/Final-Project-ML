@@ -14,3 +14,11 @@ def rename_folder(old_name, new_name):
 old_folder_name = "image-colorization"
 new_folder_name = "data"
 rename_folder(old_folder_name, new_folder_name)
+
+
+## For Celeba dataset
+
+# od.download("https://www.kaggle.com/datasets/jessicali9530/celeba-dataset/data","./")
+
+# old_folder_name = "archive"
+# new_folder_name = "Celeba"
