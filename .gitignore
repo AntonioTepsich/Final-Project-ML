@@ -4,6 +4,7 @@ flowers/
 /data
 /trained_models
 /CelebA
+/pre-processing
 
 *.zip
 *.npy
