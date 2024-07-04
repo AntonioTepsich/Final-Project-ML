@@ -83,4 +83,5 @@ class CAE(nn.Module):
     
 
     def predict(self, condition):
+        condition = condition.float().to(self.device)
         return self(condition)

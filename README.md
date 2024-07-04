@@ -11,12 +11,14 @@ This repository was made by:
 <!-- PONER LO DE TRINI -->
  - Trinidad Monreal | tmonreal@udesa.edu.ar 
 
+## Consideraciones
+Este trabajo llevo muchisimas horas de computo en la nube, es por eso que estandarizar y automatizar como se trabaja fue fundamental. Este repositorio tiene todo lo que se necesita para correr la mayorias de modelo de manera automatica.
 
-### Credits
-This repository is based on the following papers:
-<!-- PONER LISTADO DE PAPERS -->
- - [here](https://github.com/Blealtan/efficient-kan).
+Por razones de dependencias, la GAN que esta hecha en pytorch no entrena bien, es por eso que hicimos un notebook donde se implementa con Tensorflow y el problema se resuelve. El que deben mirar es el que esta al inicio y se llama gan_ml_definitiva.ipynb
 
+Por el lado del modelo de denoising, hay una carpeta especifica que tiene 2 notebooks, primero se ejecuta pre_process y luego DnCNN.
+
+Algo a tener en cuenta es por temas de espacios a compartir, no podemos subir los modelos preentrenados nuestros ya que son pesados y el campus no nos permite compartirlos. Si es necesario lo podemos pasar por otro medio. A su vez los path estan hecho de manera local, cuando usabamos colab conectada con la VM de Google Cloud, asi que habria que poner los path locales tuyos.
 
 # Installation
 ```bash
@@ -25,18 +27,22 @@ cd Final_Project_ML
 pip install -r requirements.txt
 ```
 
+Ademas deben crear los archivos logs, runs, results en caso de ser la primera vez que corra.
+
 # Usage
 ### 1-Descargar el Dataset de Kaggle
 Deberas ingresar tu usuario y apiKey de Kaggle luego de ejecutar el siguiente comando:
 ```bash
 python scripts/download_datasets.py
 ```
-
 Ejemplo:
 ```bash
 Your Kaggle username: XXXX
 Your Kaggle Key: XXXXXXXXXXXXXXXXXX
 ```
+En caso de querer otro dataset, buscar en la carpeta scrips
+
+
 
 ### 2- Entrenar modelos
 Especificar las configuraciones de los modelos a entrenar y correr el siguiente comando:
