@@ -76,5 +76,6 @@ class UNet_32_v1(nn.Module):
         return loss.item()
     
     def predict(self, condition):
+        condition = condition.float().to(self.device)
         return self(condition)
         

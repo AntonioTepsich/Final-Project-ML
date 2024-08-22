@@ -18,7 +18,7 @@ set_seed(seed)
 if __name__ == '__main__':
     model, data, features = read_configs()                  # read and load the arguments from the command line
     logfilename = '_'.join([cfg.config_name for cfg in [model, data, features]])
-    logging.config.fileConfig(join('configs', 'logging.conf'), defaults={'logfilename': join('logs',logfilename)})    
+    logging.config.fileConfig(join('configs', 'logging.conf'), defaults={'logfilename': join('logs/',logfilename)})    
     logger = logging.getLogger('src')
     set_logger_level(logger,'DEBUG')
     logger.info(f'Start experiment. Logfile name: {logfilename}')

@@ -8,7 +8,7 @@ from datetime import datetime
 
 class TensorBoardWriter(object):
     def __init__(self, save_path):
-        time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        time = datetime.now().strftime("%d-%m-%Y_%H%M%S")
         tboard_path = join('runs', sep.join(save_path.split(sep)[1:]), str(time))
         self.writer = SummaryWriter(log_dir=tboard_path)
     

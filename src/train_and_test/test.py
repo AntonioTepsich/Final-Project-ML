@@ -50,7 +50,9 @@ def test(test_loader, context, model, pre_trained_model):
             break
         
         
-        outputs = model.predict(gray).detach()
+        print(gray.shape)
+        print(color.shape)
+        outputs = model.predict(gray)
 
         cond = gray
         real = color
