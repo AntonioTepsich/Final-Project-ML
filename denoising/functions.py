@@ -19,31 +19,31 @@ from keras.models import load_model
 
 
 def resize_image(input_path, size=(256, 256)):
-    # Abrir la imagen
-    image = Image.open(input_path).convert("L")  # Convertir a escala de grises
+    # Open image
+    image = Image.open(input_path).convert("L")  # convert to grayscale
     
-    # Obtener tamaño original
+    # obtain the original size of the image
     original_width, original_height = image.size
     aspect_ratio = original_width / original_height
     
-    # Calcular nuevo tamaño
+    # calculate the new size of the image
     if aspect_ratio > 1:
-        # Imagen más ancha que alta
+        # image wider than tall
         new_width = size[0]
         new_height = int(new_width / aspect_ratio)
     else:
-        # Imagen más alta que ancha
+        # image taller than wide
         new_height = size[1]
         new_width = int(new_height * aspect_ratio)
     
-    # Redimensionar la imagen manteniendo la relación de aspecto
-    # si la imagen es mas chica que el tamaño deseado, uso interpolación LANCZOS, sino LINEAL
+    # resize the image
+    # if the original image is smaller than the target size, use LANCZOS interpolation, otherwise use BILINEAR
     if original_width < size[0] or original_height < size[1]:
         resized_image = image.resize((new_width, new_height), Image.LANCZOS)
     else:
         resized_image = image.resize((new_width, new_height), Image.BILINEAR)
     
-    # Crear un nuevo fondo de 224x224 y pegar la imagen redimensionada en el centro
+    # create a new image with the target size and paste the resized image in the center
     new_image = Image.new("L", size)
     new_image.paste(resized_image, ((size[0] - new_width) // 2, (size[1] - new_height) // 2))
     
@@ -53,26 +53,26 @@ def resize_image(input_path, size=(256, 256)):
 
 def add_noise_to_image(image_array, noise_level=0.03, seed=42):
     """
-    Agrega ruido gaussiano a una imagen.
+    Adds Gaussian noise to an image.
     
-    Parámetros:
-        image_array (numpy.array): Imagen de entrada en formato de array NumPy.
-        noise_level (float): Nivel de ruido como fracción de la intensidad máxima de la imagen (0-1).
-        seed (int): Seed para la generación de números aleatorios, para reproducibilidad.
+    Parameters:
+        image_array (numpy.array): Image to add noise to.
+        noise_level (float): Standard deviation of the Gaussian noise to add to the image.
+        seed (int): Seed for the random number generator.
     
-    Retorna:
-        numpy.array: Imagen con ruido añadido.
+    Returns:
+        numpy.array: Noisy image.
     """
     rng = RandomState(seed)
     mean = 0
-    std = noise_level * 255  # Escalar el nivel de ruido por la intensidad máxima de un pixel
+    std = noise_level * 255  # scale the noise level to the range [0, 255]
     
-    # Crear ruido gaussiano
+    # create Gaussian noise with the same shape
     gauss = rng.normal(mean, std, image_array.shape)
     
-    # Agregar ruido a la imagen original
+    # add the noise to the image
     noisy_image = image_array + gauss
-    noisy_image = np.clip(noisy_image, 0, 255)  # Asegurarse de que los valores estén dentro del rango válido para uint8
+    noisy_image = np.clip(noisy_image, 0, 255)  # Insure that the values are within the valid range for uint8
     
     return noisy_image.astype(np.uint8)
 
